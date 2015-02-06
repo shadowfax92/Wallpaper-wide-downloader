@@ -4,22 +4,47 @@ package main
 References:
 - HTML parsing using goquery example - https://www.socketloop.com/tutorials/golang-how-to-extract-links-from-web-page
 - goquery documentation - http://godoc.org/github.com/PuerkitoBio/goquery#Selection
+- saving image to disk - http://stackoverflow.com/questions/8648682/reading-image-from-http-requests-body-in-go
 */
 
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"io/ioutil"
 	"log"
-	//"strings"
+	"net/http"
+	"strings"
 )
 
 const (
-	base_url            = "http://wallpaperswide.com/"
-	wallpaper_page_base = "http://wallpaperswide.com/mac-desktop-wallpapers/page/"
-	download_resolution = "1920x1080"
+	base_url            = "http://www.hdwallpapers.in"
+	wallpaper_page_base = "http://www.hdwallpapers.in/nature__landscape-desktop-wallpapers/page/"
+	download_resolution = "1920 x 1080"
 )
 
-func fetchDownloadableUrl(url string) (err error) {
+//Download url: http://www.hdwallpapers.in/download/valley_reflections-1920x1080.jpg
+
+func downloadImage(url string, name string) (err error) {
+	log.Println("Downloading image url =", url)
+
+	res, err := http.Get(url)
+	if err != nil {
+		log.Println("Error: downloadImage url =", url)
+		return err
+	}
+
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Println("Error: reading image url =", url)
+		return err
+	}
+
+	ioutil.WriteFile(name, data, 0666)
+	log.Println("Sucess!. Downloaded image = ", name)
+	return err
+}
+
+func fetchDownloadableUrl(url string, image_name string) (err error) {
 	log.Println("\nGetting needed resolution image from url = ", url)
 	doc, err := goquery.NewDocument(url)
 	if err != nil {
@@ -30,7 +55,9 @@ func fetchDownloadableUrl(url string) (err error) {
 		resolution := s.Text()
 		if resolution == download_resolution {
 			href, _ := s.Attr("href")
-			fmt.Println("Found resolution = ", resolution, " href = ", href)
+			title, _ := s.Attr("title")
+			fmt.Println("Found resolution = ", resolution, " href = ", href, " title = ", title)
+			downloadImage(base_url+href, image_name)
 		}
 	})
 	return err
@@ -48,19 +75,21 @@ func extractUrls(url string) (err error) {
 
 			<li class="wall">
 			<div class="thumb">
-		    	<div class="mini-hud" id="hudtitle" align="center">
 		        <a href="/apple_mac_os_x_blue-wallpapers.html" title="Apple MAC OS X Blue HD Wide Wallpaper for Widescreen">
 		        <h1>Apple MAC OS X Blue</h1>
 		        </a>
 	*/
 
 	// Try to get extract the above sub-html
-	curr_sel := doc.Find(".wallpapers .wall .thumb .mini-hud a")
+	curr_sel := doc.Find(".wallpapers .wall .thumb a")
 	curr_sel.Each(func(i int, s *goquery.Selection) {
 		hrefs, is_present := s.Attr("href")
 		if is_present == true {
-			log.Println("Image url is ", base_url+hrefs)
-			fetchDownloadableUrl(base_url + hrefs)
+			image_name := hrefs
+			image_name = strings.TrimLeft(image_name, "/")
+			image_name = strings.TrimRight(image_name, ".html")
+			log.Println("Image name =", image_name, " url = ", base_url+hrefs)
+			fetchDownloadableUrl(base_url+hrefs, image_name)
 		}
 	})
 	return err
