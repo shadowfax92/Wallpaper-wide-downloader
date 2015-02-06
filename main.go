@@ -14,12 +14,17 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 )
 
 const (
 	base_url            = "http://www.hdwallpapers.in"
 	wallpaper_page_base = "http://www.hdwallpapers.in/nature__landscape-desktop-wallpapers/page/"
 	download_resolution = "1920 x 1080"
+)
+
+var (
+	wg sync.WaitGroup
 )
 
 //Download url: http://www.hdwallpapers.in/download/valley_reflections-1920x1080.jpg
@@ -57,7 +62,8 @@ func fetchDownloadableUrl(url string, image_name string) (err error) {
 			href, _ := s.Attr("href")
 			title, _ := s.Attr("title")
 			fmt.Println("Found resolution = ", resolution, " href = ", href, " title = ", title)
-			downloadImage(base_url+href, image_name)
+			go downloadImage(base_url+href, image_name)
+			wg.Add(1)
 		}
 	})
 	return err
@@ -89,7 +95,8 @@ func extractUrls(url string) (err error) {
 			image_name = strings.TrimLeft(image_name, "/")
 			image_name = strings.TrimRight(image_name, ".html")
 			log.Println("Image name =", image_name, " url = ", base_url+hrefs)
-			fetchDownloadableUrl(base_url+hrefs, image_name)
+			go fetchDownloadableUrl(base_url+hrefs, image_name)
+			wg.Add(1)
 		}
 	})
 	return err
@@ -97,6 +104,8 @@ func extractUrls(url string) (err error) {
 
 func main() {
 	fmt.Println("Wallpaper downlaoder by Nsonti")
+	defer wg.Done()
+
 	var page_start int
 	var page_end int
 	fmt.Println("Enter page_start and page_end")
@@ -104,7 +113,10 @@ func main() {
 	_, _ = fmt.Scanf("%d", &page_end)
 
 	for i := page_start; i <= page_end; i++ {
-		extractUrls(wallpaper_page_base + string(i))
+		go extractUrls(wallpaper_page_base + string(i))
+		wg.Add(1)
 	}
+
+	wg.Wait()
 
 }
