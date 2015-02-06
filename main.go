@@ -7,28 +7,30 @@ import (
 	//"strings"
 )
 
+const (
+	base_url = "http://wallpaperswide.com/"
+)
+
 func main() {
 	doc, err := goquery.NewDocument("http://wallpaperswide.com/mac-desktop-wallpapers.html")
 	if err != nil {
 		log.Fatalf("Error querying url", err)
 	}
+
+	/*
+			<ul class="wallpapers">
+
+			<li class="wall">
+			<div class="thumb">
+		    	<div class="mini-hud" id="hudtitle" align="center">
+		        <a href="/apple_mac_os_x_blue-wallpapers.html" title="Apple MAC OS X Blue HD Wide Wallpaper for Widescreen">
+		        <h1>Apple MAC OS X Blue</h1>
+		        </a>
+	*/
+
+	// Try to get extract the above sub-html
 	curr_sel := doc.Find(".wallpapers .wall .thumb .mini-hud a")
-	//curr_sel := doc.Find(".wallpapers .wall .thumb")
-	fmt.Println(curr_sel)
 	curr_sel.Each(func(i int, s *goquery.Selection) {
-
-		//Title := strings.TrimSpace(s.Find("onclick").Text())
-		// convert string to array
-		//fields := strings.Fields(Title)
-		//fmt.Println(fields)
-		//		fmt.Println(s)
-		//		Link, _ := s.Attr("href")
-		//		fmt.Println("Link = ", Link)
-
-		// working-1
-		//on_clicks, _ := s.Attr("onclick")
-		//fmt.Println(on_clicks)
-
 		hrefs, _ := s.Attr("href")
 		fmt.Println(hrefs)
 	})
