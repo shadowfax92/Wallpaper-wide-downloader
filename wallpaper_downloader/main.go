@@ -31,7 +31,9 @@ var (
 
 func downloadImage(url string, name string) (err error) {
 	log.Println("Downloading image url =", url)
-
+	tmp := strings.LastIndex(url, ".")
+	image_format := url[tmp:len(url)]
+	image_name := name + string(image_format)
 	res, err := http.Get(url)
 	if err != nil {
 		log.Println("Error: downloadImage url =", url)
@@ -44,8 +46,8 @@ func downloadImage(url string, name string) (err error) {
 		return err
 	}
 
-	ioutil.WriteFile(name, data, 0666)
-	log.Println("Sucess!. Downloaded image = ", name)
+	ioutil.WriteFile(image_name, data, 0666)
+	log.Println("Sucess!. Downloaded image = ", image_name)
 	return err
 }
 
@@ -53,7 +55,8 @@ func fetchDownloadableUrl(url string, image_name string) (err error) {
 	log.Println("\nGetting needed resolution image from url = ", url)
 	doc, err := goquery.NewDocument(url)
 	if err != nil {
-		log.Fatalln("Error while fetching downloadable url form url = ", url)
+		log.Println("Error while fetching downloadable url form url = ", url)
+		return err
 	}
 	curr_selction := doc.Find(".wallpaper-resolutions a")
 	curr_selction.Each(func(i int, s *goquery.Selection) {
@@ -73,7 +76,8 @@ func extractUrls(url string) (err error) {
 	log.Println("\nExtracting from url = ", url)
 	doc, err := goquery.NewDocument(url)
 	if err != nil {
-		log.Fatalln("Error parsing url = ", url)
+		log.Println("Error parsing url = ", url)
+		return err
 	}
 
 	/*
