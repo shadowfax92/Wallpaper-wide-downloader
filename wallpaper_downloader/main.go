@@ -113,7 +113,7 @@ func fetchDownloadableUrl(url string, image_name string) (err error) {
 
 	if err == nil {
 		log.Println("final resolution = ", max_resolution_found)
-		//go downloadImage(download_url, image_name)
+		go downloadImage(download_url, image_name)
 	}
 	return err
 }
