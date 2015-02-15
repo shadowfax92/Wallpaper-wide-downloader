@@ -17,16 +17,19 @@ import (
 	"sync"
 )
 
-/*const (
+/*
+// For hdwallpapers site
+const (
 	base_url            = "http://www.hdwallpapers.in"
 	wallpaper_page_base = "http://www.hdwallpapers.in/nature__landscape-desktop-wallpapers/page/"
 	download_resolution = "1920 x 1080"
 )*/
 
+// For wallpaperswide site
 const (
-	base_url            = "http://wallpaperswide.com"
-	wallpaper_page_base = "http://wallpaperswide.com/3840x2160-wallpapers-r/page/"
-	//wallpaper_page_base = "http://wallpaperswide.com/nature-desktop-wallpapers/page/"
+	base_url = "http://wallpaperswide.com"
+	//wallpaper_page_base = "http://wallpaperswide.com/3840x2160-wallpapers-r/page/"
+	wallpaper_page_base = "http://wallpaperswide.com/nature-desktop-wallpapers/page/"
 	download_resolution = "3840x2160"
 )
 
@@ -35,10 +38,23 @@ var (
 	check_resolutions = []string{"3840x2160", "3554x1999", "2880x1620", "2560x1440", "2400x1350", "2048x1152", "1920x1080"}
 )
 
-//Download url: http://www.hdwallpapers.in/download/valley_reflections-1920x1080.jpg
+func resolutionProduct(res string) (proc int64, err error) {
+	proc = -1
+	strings.Replace(res, " ", "", -1) //remove white spaces
+	log.Println(res)
+	var res1, res2 int
+	_, err = fmt.Scanf(res, "%dx%d", &res1, &res2)
+	if err != nil {
+		log.Println("Error: resolutionProduct() = ", err)
+		return proc, err
+	}
+	proc = int64(res1 * res2)
+	return proc, err
+}
 
+//Download url: http://www.hdwallpapers.in/download/valley_reflections-1920x1080.jpg
 func downloadImage(url string, name string) (err error) {
-	wg.Add(1)
+	defer wg.Done()
 	log.Println("Downloading image url =", url)
 	tmp := strings.LastIndex(url, ".")
 	image_format := url[tmp:len(url)]
@@ -48,7 +64,6 @@ func downloadImage(url string, name string) (err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:35.0) Gecko/20100101 Firefox/35.0")
 	req.Header.Add("Host", "wallpaperswide.com")
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:35.0) Gecko/20100101 Firefox/35.0")
 	req.Header.Add("Referer", "http://wallpaperswide.com/os_x_yosemite_2-wallpapers.html")
 	req.Header.Add("Cookie", "__qca=P0-629664164-1423208545996; __utma=30129849.1884121915.1423208546.1423214454.1423922331.3; __utmz=30129849.1423208546.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); ae74935a9f5bd890e996f9ae0c7fe805=q5vS1ldKBFw%3DRXHN2qLD5gI%3DuvhKVtnz6aQ%3D6yAA0QoLSpo%3Daa0wj%2BrGoS4%3DlopdREWA8%2B4%3DvuEblRbQplU%3D8NgLP0uGZcM%3D; __utmb=30129849.1.10.1423922331; __utmc=30129849; __utmt=1")
 	req.Header.Add("Connection", "keep-alive")
@@ -67,22 +82,8 @@ func downloadImage(url string, name string) (err error) {
 	return err
 }
 
-func resolutionProduct(res string) (proc int64, err error) {
-	proc = -1
-	strings.Replace(res, " ", "", -1) //remove white spaces
-	log.Println(res)
-	var res1, res2 int
-	_, err = fmt.Scanf(res, "%dx%d", &res1, &res2)
-	if err != nil {
-		log.Println("Error: resolutionProduct() = ", err)
-		return proc, err
-	}
-	proc = int64(res1 * res2)
-	return proc, err
-}
-
 func fetchDownloadableUrl(url string, image_name string) (err error) {
-	wg.Add(1)
+	defer wg.Done()
 	log.Println("\nGetting needed resolution image from url = ", url)
 	doc, err := goquery.NewDocument(url)
 
@@ -98,7 +99,6 @@ func fetchDownloadableUrl(url string, image_name string) (err error) {
 	curr_selection.Each(func(i int, s *goquery.Selection) {
 		//		resolution, err := resolutionProduct(s.Text())
 		resolution := s.Text()
-		log.Println(resolution)
 		//if resolution > max_resolution_found {
 		if resolution == download_resolution {
 			href, _ := s.Attr("href")
@@ -107,18 +107,16 @@ func fetchDownloadableUrl(url string, image_name string) (err error) {
 			download_url = base_url + href
 
 			log.Println("new_max_resolution = ", max_resolution_found, " image_name = ", image_name, " download_url = ", download_url)
+			wg.Add(1)
+			go downloadImage(download_url, image_name)
 		}
 
 	})
-
-	if err == nil {
-		log.Println("final resolution = ", max_resolution_found)
-		go downloadImage(download_url, image_name)
-	}
 	return err
 }
 
 func extractUrls(url string) (err error) {
+	defer wg.Done()
 	log.Println("\nExtracting from url = ", url)
 	doc, err := goquery.NewDocument(url)
 	if err != nil {
@@ -145,6 +143,7 @@ func extractUrls(url string) (err error) {
 			image_name = strings.TrimLeft(image_name, "/")
 			image_name = strings.TrimRight(image_name, ".html")
 			log.Println("Image name = ", image_name, " url = ", base_url+hrefs)
+			wg.Add(1)
 			go fetchDownloadableUrl(base_url+hrefs, image_name)
 		}
 	})
@@ -153,7 +152,6 @@ func extractUrls(url string) (err error) {
 
 func main() {
 	fmt.Println("Wallpaper downlaoder by Nsonti")
-	defer wg.Done()
 
 	var page_start int
 	var page_end int
@@ -163,7 +161,6 @@ func main() {
 
 	for i := page_start; i <= page_end; i++ {
 		wg.Add(1)
-		fmt.Println(i)
 		go extractUrls(fmt.Sprint(wallpaper_page_base, i))
 	}
 
