@@ -13,29 +13,17 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 )
 
-/*
-// For hdwallpapers site
-const (
-	base_url            = "http://www.hdwallpapers.in"
-	wallpaper_page_base = "http://www.hdwallpapers.in/nature__landscape-desktop-wallpapers/page/"
-	download_resolution = "1920 x 1080"
-)*/
-
-// For wallpaperswide site
-const (
-	base_url = "http://wallpaperswide.com"
-	//wallpaper_page_base = "http://wallpaperswide.com/3840x2160-wallpapers-r/page/"
+var (
+	base_url            = "http://wallpaperswide.com"
 	wallpaper_page_base = "http://wallpaperswide.com/nature-desktop-wallpapers/page/"
 	download_resolution = "3840x2160"
-)
-
-var (
-	wg                sync.WaitGroup
-	check_resolutions = []string{"3840x2160", "3554x1999", "2880x1620", "2560x1440", "2400x1350", "2048x1152", "1920x1080"}
+	wg                  sync.WaitGroup
+	check_resolutions   = []string{"3840x2160", "3554x1999", "2880x1620", "2560x1440", "2400x1350", "2048x1152", "1920x1080"}
 )
 
 func resolutionProduct(res string) (proc int64, err error) {
@@ -53,9 +41,31 @@ func resolutionProduct(res string) (proc int64, err error) {
 }
 
 //Download url: http://www.hdwallpapers.in/download/valley_reflections-1920x1080.jpg
+
+func getCookie(url string) (err error) {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:35.0) Gecko/20100101 Firefox/35.0")
+	req.Header.Add("Connection", "keep-alive")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		Error.Println("getCookie client.Do failed!. Err = ", err)
+		return err
+	}
+	Info.Println("response header = ", resp.Header)
+	Info.Println("response length = ", resp.ContentLength)
+	Info.Println("response Body = ", resp.Body)
+	Info.Println("Cookies array length = ", len(resp.Cookies()))
+	for _, val := range resp.Cookies() {
+		Info.Println(val)
+	}
+	return err
+}
+
 func downloadImage(url string, name string) (err error) {
 	defer wg.Done()
-	log.Println("Downloading image url =", url)
+	Debug.Println("Downloading image url =", url)
 	tmp := strings.LastIndex(url, ".")
 	image_format := url[tmp:len(url)]
 	image_name := name + string(image_format)
@@ -64,8 +74,7 @@ func downloadImage(url string, name string) (err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:35.0) Gecko/20100101 Firefox/35.0")
 	req.Header.Add("Host", "wallpaperswide.com")
-	req.Header.Add("Referer", "http://wallpaperswide.com/os_x_yosemite_2-wallpapers.html")
-	req.Header.Add("Cookie", "__qca=P0-629664164-1423208545996; __utma=30129849.1884121915.1423208546.1423214454.1423922331.3; __utmz=30129849.1423208546.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); ae74935a9f5bd890e996f9ae0c7fe805=q5vS1ldKBFw%3DRXHN2qLD5gI%3DuvhKVtnz6aQ%3D6yAA0QoLSpo%3Daa0wj%2BrGoS4%3DlopdREWA8%2B4%3DvuEblRbQplU%3D8NgLP0uGZcM%3D; __utmb=30129849.1.10.1423922331; __utmc=30129849; __utmt=1")
+	req.Header.Add("Cookie", "__qca=P0-629664164-1423208545996; __utma=30129849.1884121915.1423208546.1424068425.1424071934.5; __utmz=30129849.1423208546.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none); ae74935a9f5bd890e996f9ae0c7fe805=q5vS1ldKBFw%3DRXHN2qLD5gI%3DuvhKVtnz6aQ%3D6yAA0QoLSpo%3Daa0wj%2BrGoS4%3DlopdREWA8%2B4%3DvuEblRbQplU%3D8NgLP0uGZcM%3D; __utmc=30129849; __utmb=30129849.1.10.1424071934; __utmt=1")
 	req.Header.Add("Connection", "keep-alive")
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
@@ -78,17 +87,17 @@ func downloadImage(url string, name string) (err error) {
 	}
 
 	ioutil.WriteFile("./wallpapers/"+image_name, data, 0666)
-	log.Println("Sucess!. Downloaded image = ", image_name)
+	Info.Println("Sucess!. Downloaded image = ", image_name)
 	return err
 }
 
 func fetchDownloadableUrl(url string, image_name string) (err error) {
 	defer wg.Done()
-	log.Println("\nGetting needed resolution image from url = ", url)
+	Debug.Println("\nGetting needed resolution image from url = ", url)
 	doc, err := goquery.NewDocument(url)
 
 	if err != nil {
-		log.Println("Error while fetching downloadable url form url = ", url)
+		Error.Println("Error while fetching downloadable url form url = ", url)
 		return err
 	}
 
@@ -106,7 +115,7 @@ func fetchDownloadableUrl(url string, image_name string) (err error) {
 			max_resolution_found = resolution
 			download_url = base_url + href
 
-			log.Println("new_max_resolution = ", max_resolution_found, " image_name = ", image_name, " download_url = ", download_url)
+			Info.Println("new_max_resolution = ", max_resolution_found, " image_name = ", image_name, " download_url = ", download_url)
 			wg.Add(1)
 			go downloadImage(download_url, image_name)
 		}
@@ -117,10 +126,10 @@ func fetchDownloadableUrl(url string, image_name string) (err error) {
 
 func extractUrls(url string) (err error) {
 	defer wg.Done()
-	log.Println("\nExtracting from url = ", url)
+	Debug.Println("\nExtracting from url = ", url)
 	doc, err := goquery.NewDocument(url)
 	if err != nil {
-		log.Println("Error parsing url = ", url)
+		Error.Println("Error parsing url = ", url)
 		return err
 	}
 
@@ -142,7 +151,7 @@ func extractUrls(url string) (err error) {
 			image_name := hrefs
 			image_name = strings.TrimLeft(image_name, "/")
 			image_name = strings.TrimRight(image_name, ".html")
-			log.Println("Image name = ", image_name, " url = ", base_url+hrefs)
+			Info.Println("Image name = ", image_name, " url = ", base_url+hrefs)
 			wg.Add(1)
 			go fetchDownloadableUrl(base_url+hrefs, image_name)
 		}
@@ -151,7 +160,9 @@ func extractUrls(url string) (err error) {
 }
 
 func main() {
-	fmt.Println("Wallpaper downlaoder by Nsonti")
+	LoggingInit(os.Stdout, os.Stdout, os.Stderr, os.Stdout)
+	getCookie(base_url)
+	os.Exit(1)
 
 	var page_start int
 	var page_end int
