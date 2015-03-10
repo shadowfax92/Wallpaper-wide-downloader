@@ -69,7 +69,7 @@ func getCookie(url string) (err error) {
 }
 
 func downloadImage(url string, name string) (err error) {
-	/*select {
+	select {
 	case tm := <-ticker.C:
 		{
 			defer wg.Done()
@@ -83,11 +83,21 @@ func downloadImage(url string, name string) (err error) {
 			req, err := http.NewRequest("GET", url, nil)
 			req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:35.0) Gecko/20100101 Firefox/35.0")
 			req.Header.Add("Host", "wallpaperswide.com")
-			req.Header.Add("Cookie", "__gads=ID=7d4ffd543145afad:T=1425997114:S=ALNI_MafR0WD0K9fFNiTNH7aPBIIBaMT0w; __utma=30129849.257949811.1425997114.1425997114.1425997114.1; __utmb=30129849.3.10.1425997114; __utmc=30129849; __utmz=30129849.1425997114.1.1.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); __utmt=1; __qca=P0-928709853-1425997115885")
+			req.Header.Add("Cookie", "__gads=ID=7d4ffd543145afad:T=1425997114:S=ALNI_MafR0WD0K9fFNiTNH7aPBIIBaMT0w; __utma=30129849.257949811.1425997114.1425997114.1425997114.1; __utmc=30129849; __utmz=30129849.1425997114.1.1.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); __qca=P0-928709853-1425997115885")
+			req.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+			req.Header.Add("Accept-Language", "en-US,en;q=0.5")
+			req.Header.Add("Accept-Encoding", "gzip, deflate")
+			req.Header.Add("Referer", url)
 
 			req.Header.Add("Connection", "keep-alive")
 			resp, err := client.Do(req)
 			defer resp.Body.Close()
+
+			http_status := resp.StatusCode
+			Info.Println("HTTP status code = ", http_status, " Url = ", url)
+			if http_status != 200 {
+				return errorNon200HTTPStatus
+			}
 
 			data, err := ioutil.ReadAll(resp.Body)
 
@@ -101,44 +111,44 @@ func downloadImage(url string, name string) (err error) {
 		}
 	default:
 		return err
-	}*/
-
-	defer wg.Done()
-	//Debug.Println("ticker received = ", tm)
-	Debug.Println("Downloading image url = ", url)
-	tmp := strings.LastIndex(url, ".")
-	image_format := url[tmp:len(url)]
-	image_name := name + string(image_format)
-
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:35.0) Gecko/20100101 Firefox/35.0")
-	req.Header.Add("Host", "wallpaperswide.com")
-	req.Header.Add("Cookie", "__gads=ID=7d4ffd543145afad:T=1425997114:S=ALNI_MafR0WD0K9fFNiTNH7aPBIIBaMT0w; __utma=30129849.257949811.1425997114.1425997114.1425997114.1; __utmc=30129849; __utmz=30129849.1425997114.1.1.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); __qca=P0-928709853-1425997115885")
-	req.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-	req.Header.Add("Accept-Language", "en-US,en;q=0.5")
-	req.Header.Add("Accept-Encoding", "gzip, deflate")
-	req.Header.Add("Referer", url)
-
-	req.Header.Add("Connection", "keep-alive")
-	resp, err := client.Do(req)
-	defer resp.Body.Close()
-
-	http_status := resp.StatusCode
-	Info.Println("HTTP status code = ", http_status, " Url = ", url)
-	if http_status != 200 {
-		return errorNon200HTTPStatus
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		log.Println("Error: reading image url =", url)
-		return err
-	}
-
-	ioutil.WriteFile("./downloads/"+image_name, data, 0666)
-	Info.Println("Sucess!. Downloaded image = ", image_name)
+	//	defer wg.Done()
+	//	//Debug.Println("ticker received = ", tm)
+	//	Debug.Println("Downloading image url = ", url)
+	//	tmp := strings.LastIndex(url, ".")
+	//	image_format := url[tmp:len(url)]
+	//	image_name := name + string(image_format)
+	//
+	//	client := &http.Client{}
+	//	req, err := http.NewRequest("GET", url, nil)
+	//	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:35.0) Gecko/20100101 Firefox/35.0")
+	//	req.Header.Add("Host", "wallpaperswide.com")
+	//	req.Header.Add("Cookie", "__gads=ID=7d4ffd543145afad:T=1425997114:S=ALNI_MafR0WD0K9fFNiTNH7aPBIIBaMT0w; __utma=30129849.257949811.1425997114.1425997114.1425997114.1; __utmc=30129849; __utmz=30129849.1425997114.1.1.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); __qca=P0-928709853-1425997115885")
+	//	req.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	//	req.Header.Add("Accept-Language", "en-US,en;q=0.5")
+	//	req.Header.Add("Accept-Encoding", "gzip, deflate")
+	//	req.Header.Add("Referer", url)
+	//
+	//	req.Header.Add("Connection", "keep-alive")
+	//	resp, err := client.Do(req)
+	//	defer resp.Body.Close()
+	//
+	//	http_status := resp.StatusCode
+	//	Info.Println("HTTP status code = ", http_status, " Url = ", url)
+	//	if http_status != 200 {
+	//		return errorNon200HTTPStatus
+	//	}
+	//
+	//	data, err := ioutil.ReadAll(resp.Body)
+	//
+	//	if err != nil {
+	//		log.Println("Error: reading image url =", url)
+	//		return err
+	//	}
+	//
+	//	ioutil.WriteFile("./downloads/"+image_name, data, 0666)
+	//	Info.Println("Sucess!. Downloaded image = ", image_name)
 
 	return err
 }
@@ -222,7 +232,7 @@ func main() {
 	_, _ = fmt.Scanf("%d", &page_start)
 	_, _ = fmt.Scanf("%d", &page_end)
 
-	ticker = time.NewTicker(time.Duration(1))
+	ticker = time.NewTicker(time.Duration(3))
 	for i := page_start; i <= page_end; i++ {
 		wg.Add(1)
 		go extractUrls(fmt.Sprint(wallpaper_page_base, i))
